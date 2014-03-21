@@ -5,13 +5,11 @@ SOLVER_LIBS := -Llib -lsolver
 
 executables := examples/spyral_motion.x examples/example.x examples/duffing.x examples/simple_example.x
 
-all: ${executables}
+all: lib lib/libsolver.a ${executables}
 	rm src/*.o
 
-%.x: %.cpp libraries
+%.x: %.cpp
 	${CXX} ${CXX_FLAGS} -o $@ $< ${SOLVER_LIBS} ${SOLVER_INCS}
-
-libraries: lib lib/libsolver.a 
 
 lib/libsolver.a: src/solver.o src/exceptions.o
 	ar -cvr $@ $^

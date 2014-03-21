@@ -1,3 +1,6 @@
+#ifndef SOLVER
+#define SOLVER
+
 #include <functional>
 #include <vector>
 
@@ -67,3 +70,5 @@ class RK4Solver : public Solver {
 	using Solver::step;
 	PosVec step(double step);
 };
+
+#endif //SOLVER

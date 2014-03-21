@@ -7,3 +7,7 @@ const char* wrongDimension::what() const throw() {
 const char* dimensionMismatch::what() const throw() {
 	return "Solver: position vector and force vector must have the same size!";
 }	
+
+const char* badFile::what() const throw() {
+	return "MPlotter: could not read file";
+}	

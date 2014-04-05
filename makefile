@@ -11,9 +11,20 @@ examples/rtplotter_example.x examples/maryplotter_example.x
 libraries := lib/libsolver.a lib/libplotter.a
 
 all: lib ${libraries} ${executables}
+all_noroot: lib lib/libsolver.a examples/duffing.x \
+examples/example.x examples/simple_example.x \
+examples/spyral_motion.x
 
-%.x: %.cpp ${libraries}
-	${CXX} ${CXX_FLAGS} -o $@ $< ${SOLVER_LIBS} ${SOLVER_INCS} ${ROOT_INCS} ${ROOT_LIBS}
+%.x: %.cpp lib/libsolver.a
+	${CXX} ${CXX_FLAGS} -o $@ $< -Isrc -Llib -lsolver
+
+examples/rtplotter_example.x: examples/rtplotter_example.cpp \
+${libraries}
+	${CXX} ${CXX_FLAGS} -o $@ $< ${SOLVER_INCS} ${SOLVER_LIBS} ${ROOT_INCS} ${ROOT_LIBS}
+
+examples/maryplotter_example.x: examples/maryplotter_example.cpp \
+${libraries}
+	${CXX} ${CXX_FLAGS} -o $@ $< ${SOLVER_INCS} ${SOLVER_LIBS} ${ROOT_INCS} ${ROOT_LIBS}
 
 lib/libsolver.a: lib/solver.o lib/exceptions.o
 	ar -cvr $@ $^

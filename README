@@ -1,0 +1,25 @@
+This project would be a simple and easy-to-expand framework
+for the numerical resolution of differential equations of the
+form dX/dt = F(t,X), where X and F may be vectors, and t is a 
+scalar. The great majority of motions can be described by equations
+of such form.
+
+The project makes extensive use of STL and c++11 standard. You will
+not be able to compile any of the source files without a compiler 
+that supports the new standard. You MIGHT be able to compile the 
+libraries with a compiler different from gcc (modifying the makefile
+should be straighforward) but I never used anything else so you're on
+your own.
+
+libplotter.a, the library containing the RTPlotter and MPlotter classes,
+requires the CERN ROOT framework to be installed on your system to be 
+compiled and to work.
+the command `root-config` must be accessible by the makefile.
+if this is not the case, you can still compile libsolver.a, containing
+the classes that actually solve differential equations numerically, by
+using the command `makefile all_noroot`.
+
+the 'examples' directory provides sample snippets of code that use all
+major functionalities of the different classes.
+
+Please report any bugs or suggestions to blue@lcm.mi.infn.it

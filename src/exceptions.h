@@ -8,6 +8,11 @@ class wrongDimension : public std::exception {
 	const char* what() const throw(); 
 };
 
+class emptyPosVec : public std::exception {
+	public:
+	const char* what() const throw(); 
+};
+
 class dimensionMismatch : public std::exception {
 	public:
 	const char* what() const throw(); 

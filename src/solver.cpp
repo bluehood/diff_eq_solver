@@ -27,8 +27,10 @@ void Solver::reset(double t0, const PosVec& X0) {
 }
 
 void Solver::checkDimensions() const {
-	if(mX.size()%2 != 0)
-		throw wrongDimension();
+	//if(mX.size()%2 != 0)
+	//	throw wrongDimension();
+	if(mX.empty())
+		throw emptyPosVec();
 	if(mX.size() != mF.size())
 		throw dimensionMismatch();
 }

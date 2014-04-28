@@ -11,15 +11,18 @@ libraries with a compiler different from gcc (modifying the makefile
 should be straighforward) but I never used anything else so you're on
 your own.
 
-libplotter.a, the library containing the RTPlotter and MPlotter classes,
-requires the CERN ROOT framework to be installed on your system to be 
-compiled and to work.
-the command `root-config` must be accessible by the makefile.
-if this is not the case, you can still compile libsolver.a, containing
-the classes that actually solve differential equations numerically, by
-using the command `makefile all_noroot`.
+libplotter.a, the library containing the RTPlotter and MPlotter 
+classes, requires the CERN ROOT framework to be installed on your 
+system to be compiled and to work. The command `root-config` must be 
+accessible by the makefile.
+If this is not the case, you can still compile libsolver.a, 
+containing the classes that actually solve differential equations 
+numerically, by using the command `makefile all_noroot`.
 
-the 'examples' directory provides sample snippets of code that use all
-major functionalities of the different classes.
+The 'examples' directory provides sample snippets of code that use 
+all major functionalities of the different classes.
+
+Special thanks go to Tp for alfa testing this framework and
+providing some of the most interesting examples.
 
 Please report any bugs or suggestions to blue@lcm.mi.infn.it

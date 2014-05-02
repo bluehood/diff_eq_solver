@@ -16,14 +16,14 @@
 
 MPlotter::MPlotter(const std::string& filename, double step) : 
 	mdim(0), mstep(step), mdrawOptions("APLINE"),
-	mfilename(filename), mnPoints(0), mtotPoints(0) {	
+	mfilename(filename), mnPoints(0), mtotPoints(0),
+	mline(nullptr), mhist3d(nullptr) {	
 	mapp = new TApplication("app",nullptr,nullptr);
 }
 
 MPlotter::~MPlotter() {
-	for(auto& mgraph2d : mgraphs2d)
-		if(mgraph2d != nullptr)
-			delete mgraph2d;
+	delete mhist3d;
+	delete mline;
 	for(auto& mgraph : mgraphs)	
 		if(mgraph != nullptr)
 			delete mgraph;
@@ -34,9 +34,15 @@ MPlotter::~MPlotter() {
 }
 
 void MPlotter::run() {
+	if(mfilename.empty()){
+		std::cerr  << "maryplotter: empty file nama. now quitting." << std::endl;
+		return;
+	}
+	
+	mfile.open(mfilename);
 	//check whether filename is a good file
 	if(!isFileOk()) {
-		std::cerr << "maryplotter: run: could not open file \"" << mfilename << "\". now exiting." << std::endl;
+		std::cerr << "maryplotter: run: could not open file \"" << mfilename << "\" or empty file found. now exiting." << std::endl;
 		return;
 	}
 	
@@ -45,9 +51,10 @@ void MPlotter::run() {
 	
 	//parse file line by line
 	//add a point and update canvases each time
-	std::ifstream input(mfilename);
+	mfile.clear();
+	mfile.seekg(0);
 	std::string line;
-	while(std::getline(input,line)) {
+	while(std::getline(mfile,line)) {
 		std::stringstream str(line);
 		PosVec X;
 		double entry;
@@ -63,21 +70,24 @@ void MPlotter::run() {
 	std::cin.get();
 }
 
-bool MPlotter::isFileOk() const {
-	if(mfilename.empty())
+bool MPlotter::isFileOk() {
+	mfile.clear();
+	mfile.seekg(0);
+	if(!mfile){
 		return false;
-	std::ifstream input(mfilename);
-	if(!input)
-		return false;
-	std::string dummy;
-	if(!std::getline(input,dummy))
-		return false;
+	}
 
+	//check for empty file
+	mfile.seekg(std::ios::ate);
+	if(mfile.tellg() == 0){
+		return false;
+	}
+	
 	return true;
 }
 
 void MPlotter::addPoint(const PosVec& X) {
-	if((mgraphs.empty() && mgraphs2d.empty()) || mcanvases.empty()) {
+	if((mgraphs.empty() && mline == nullptr) || mcanvases.empty()) {
 		std::cerr << "maryplotter: addPoint: empty graphs or canvases. this should never happen" << std::endl;
 		throw 1;
 	}
@@ -87,16 +97,16 @@ void MPlotter::addPoint(const PosVec& X) {
 		return;
 	}
 
-	if(mdim == 2) {
+	if(mdim == 1) {
 		mgraphs[0]->SetPoint(mnPoints,mnPoints,X[0]);
 		++mnPoints;
 	}
-	else if(mdim == 4) {
+	else if(mdim == 4 || mdim == 2) {
 		mgraphs[0]->SetPoint(mnPoints,X[0],X[1]);
 		++mnPoints;
 	}
-	else if(mdim == 6) {
-		mgraphs2d[0]->SetPoint(mnPoints,X[0],X[1],X[2]);
+	else if(mdim == 6 || mdim == 3) {
+		mline->SetPoint(mnPoints,X[0],X[1],X[2]);
 		++mnPoints;
 	}
 	else {
@@ -106,15 +116,17 @@ void MPlotter::addPoint(const PosVec& X) {
 }
 
 void MPlotter::draw() const {
-	if(mdim == 2) {
+	if(mdim == 1) {
 		double miny = mins[0] - (mins[0]>0?0.1*mins[0]:-0.1*mins[0]);
 		double maxy = maxs[0] + (maxs[0]>0?0.1*maxs[0]:-0.1*maxs[0]);
 		mcanvases[0]->cd();
 		mgraphs[0]->GetXaxis()->SetLimits(0.,1.1*mtotPoints);
+		mgraphs[0]->GetXaxis()->SetRangeUser(0.,1.1*mtotPoints);
 		mgraphs[0]->GetYaxis()->SetLimits(miny,maxy);
+		mgraphs[0]->GetYaxis()->SetRangeUser(miny,maxy);
 		mgraphs[0]->Draw(mdrawOptions.c_str());
 	}
-	else if(mdim == 4) {
+	else if(mdim == 4 || mdim == 2) {
 		double minx = mins[0] - (mins[0]>0?0.1*mins[0]:-0.1*mins[0]);
 		double maxx = maxs[0] + (maxs[0]>0?0.1*maxs[0]:-0.1*maxs[0]);
 		double miny = mins[1] - (mins[1]>0?0.1*mins[1]:-0.1*mins[1]);
@@ -126,7 +138,7 @@ void MPlotter::draw() const {
 		mgraphs[0]->GetYaxis()->SetRangeUser(miny,maxy);
 		mgraphs[0]->Draw(mdrawOptions.c_str());
 	}
-	else if(mdim == 6) {
+	else if(mdim == 6 || mdim == 3) {
 		double minx = mins[0] - (mins[0]>0?0.1*mins[0]:-0.1*mins[0]);
 		double maxx = maxs[0] + (maxs[0]>0?0.1*maxs[0]:-0.1*maxs[0]);
 		double miny = mins[1] - (mins[1]>0?0.1*mins[1]:-0.1*mins[1]);
@@ -134,13 +146,14 @@ void MPlotter::draw() const {
 		double minz = mins[2] - (mins[2]>0?0.1*mins[2]:-0.1*mins[2]);
 		double maxz = maxs[2] + (maxs[2]>0?0.1*maxs[2]:-0.1*maxs[2]);
 		mcanvases[0]->cd();
-		mgraphs2d[0]->GetXaxis()->SetLimits(mins[0],maxs[0]);
-		mgraphs2d[0]->GetXaxis()->SetRangeUser(mins[0],maxs[0]);
-		mgraphs2d[0]->GetYaxis()->SetLimits(mins[1],maxs[1]);
-		mgraphs2d[0]->GetYaxis()->SetRangeUser(mins[0],maxs[0]);
-		mgraphs2d[0]->GetZaxis()->SetLimits(mins[1],maxs[1]);
-		mgraphs2d[0]->GetZaxis()->SetRangeUser(mins[0],maxs[0]);
-		mgraphs2d[0]->Draw(mdrawOptions.c_str());
+		mhist3d->GetXaxis()->SetLimits(minx,maxx);
+		mhist3d->GetXaxis()->SetRangeUser(minx,maxx);
+		mhist3d->GetYaxis()->SetLimits(miny,maxy);
+		mhist3d->GetYaxis()->SetRangeUser(miny,maxy);
+		mhist3d->GetZaxis()->SetLimits(minz,maxz);
+		mhist3d->GetZaxis()->SetRangeUser(minz,maxz);
+		mhist3d->Draw();
+		mline->Draw();
 	}
 	else {
 		std::cerr << "I have no idea how to draw a system with dimension " << mdim << std::endl;
@@ -149,12 +162,6 @@ void MPlotter::draw() const {
 }
 
 void MPlotter::update() const {
-	for(auto& mgraph2d : mgraphs2d)
-		if(mgraph2d != nullptr)
-			mgraph2d->Draw(mdrawOptions.c_str());
-	for(auto& mgraph : mgraphs)	
-		if(mgraph != nullptr)
-			mgraph->Draw(mdrawOptions.c_str());
 	for(auto& mcanvas : mcanvases)
 		if(mcanvas != nullptr) {
 			mcanvas->Modified();
@@ -163,11 +170,12 @@ void MPlotter::update() const {
 }
 
 void MPlotter::findParameters() {
-	std::ifstream input(mfilename);
+	mfile.clear();
+	mfile.seekg(0);
 	std::string line;
 	
 	//read a line
-	while(std::getline(input,line)) {
+	while(std::getline(mfile,line)) {
 		++mtotPoints;
 		double entry;
 		std::stringstream str(line);
@@ -189,7 +197,7 @@ void MPlotter::findParameters() {
 	
 	mdim = mins.size();
 
-	/* FOR DEBUG PURPOSES
+	/* FOR DEBUG PURPOSES */
 	std::cout << "parameters found:" << std::endl;
 	std::cout << "dim = " << mdim << std::endl;
 	std::cout << "n points = " << mtotPoints << std::endl;
@@ -202,7 +210,7 @@ void MPlotter::findParameters() {
 		std::cout << x << " ";
 	std::cout << std::endl;
 
-	*/
+	/**/
 }
 
 void MPlotter::initGraphs() {
@@ -210,21 +218,23 @@ void MPlotter::initGraphs() {
 		std::cerr << "maryplotter: initGraphs: min or max not present. this should never happen.";
 		throw 1;
 	}
-	if(! (mgraphs.empty() && mgraphs2d.empty() && mcanvases.empty())) {
+	if(! (mgraphs.empty() && mline == nullptr && mcanvases.empty())) {
 		std::cerr << "maryplotter: initGraphs: graphs or canvases already filled. this should never happen";
 		throw 2;
 	}
 	
-	if(mdim == 2) {
+	if(mdim == 1) {
 		mgraphs.push_back(new TGraph);
 		mcanvases.push_back(new TCanvas);
 	}
-	else if(mdim == 4) {
+	else if(mdim == 4 || mdim == 2) {
 		mgraphs.push_back(new TGraph);
 		mcanvases.push_back(new TCanvas);
 	}
-	else if(mdim == 6) {
-		mgraphs2d.push_back(new TGraph2D);
+	else if(mdim == 6 || mdim == 3) {
+		mline = new TPolyLine3D;
+		mhist3d = new TH3F("h3d", "", 3., -1., 1., 3., -1., 1., 3., -1., 1.);
+		mhist3d->SetStats(false);
 		mcanvases.push_back(new TCanvas);
 	}
 	else {

@@ -2,9 +2,11 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <cmath>
 
 RTPlotter::RTPlotter(char mode) : 
-	mdim(0), isDimSet(false), mmode(mode), mnPoints(0), mdrawOptions("APLINE") {	
+	mdim(0), isDimSet(false), mmode(mode), mnPoints(0), 
+	mdrawOptions("APLINE"), mhist3d(nullptr), mline(nullptr){
 	app = new TApplication("app",nullptr,nullptr);
 }
 
@@ -73,17 +75,20 @@ void RTPlotter::addPoint(const PosVec& X) {
 			++mnPoints;
 		}
 	}
-	else if( mdim == 6) {
+	else if(mdim == 6) {
 		if(mmode == 't') {
 			double x,y,z;
 			x = X[0];
 			y = X[1];
 			z = X[2];
-			if(mgraphs2d.size() == 0)
-				mgraphs2d.push_back(new TGraph2D);
+			evalMinMax(x,y,z);
 			if(mcanvases.size() == 0)
 				mcanvases.push_back(new TCanvas);
-			mgraphs2d[0]->SetPoint(mnPoints,x,y,z);
+			if(mhist3d == nullptr)
+				mhist3d = new TH3F("h3d", "", 3., -1., 1., 3., -1., 1., 3., -1., 1.);
+			if(mline == nullptr)
+				mline = new TPolyLine3D;
+			mline->SetPoint(mnPoints,x,y,z);
 			++mnPoints;
 		}
 		else if(mmode == 'p') {
@@ -111,7 +116,7 @@ void RTPlotter::addPoint(const PosVec& X) {
 		}
 	}
 	else {
-		std::cerr << "I have no idea how to handle a point with " << mdim << " coordinates, sorry" << std::endl;
+		std::cerr << "RTPlotter: I have no idea how to add a point with " << mdim << " coordinates, sorry" << std::endl;
 		return;
 	}
 }
@@ -145,9 +150,17 @@ void RTPlotter::draw() const {
 		}
 	}
 	else if(mdim == 6) {
-		if(mmode == 't') {
+		if(mmode == 't') {	
 			mcanvases[0]->cd();
-			mgraphs2d[0]->Draw(mdrawOptions.c_str());
+			if(mins[0] < maxs[0])
+				mhist3d->GetXaxis()->SetLimits(mins[0],maxs[0]);
+			if(mins[1] < maxs[1])
+				mhist3d->GetYaxis()->SetLimits(mins[1],maxs[1]);
+			if(mins[2] < maxs[2])
+				mhist3d->GetZaxis()->SetLimits(mins[2],maxs[2]);
+			mhist3d->SetStats(false);
+			mhist3d->Draw();
+			mline->Draw();
 		}
 		else if(mmode == 'p') {
 			for(int i=0; i<3; ++i) {
@@ -157,19 +170,20 @@ void RTPlotter::draw() const {
 		}
 	}
 	else {
-		std::cerr << "I have no idea how to draw a system with dimension " << mdim << std::endl;
+		std::cerr << "RTPlotter: I have no idea how to draw a system with dimension " << mdim << std::endl;
 		return;
 	}
-	//app->Run();
 }
 
 void RTPlotter::update() const {
-	for(auto& mgraph2d : mgraphs2d)
-		if(mgraph2d != nullptr)
-			mgraph2d->Draw(mdrawOptions.c_str());
-	for(auto& mgraph : mgraphs)	
-		if(mgraph != nullptr)
-			mgraph->Draw(mdrawOptions.c_str());
+	if(mhist3d != nullptr){
+		if(mins[0] < maxs[0])
+			mhist3d->GetXaxis()->SetLimits(mins[0],maxs[0]);
+		if(mins[1] < maxs[1])
+			mhist3d->GetYaxis()->SetLimits(mins[1],maxs[1]);
+		if(mins[2] < maxs[2])
+			mhist3d->GetZaxis()->SetLimits(mins[2],maxs[2]);
+	}
 	for(auto& mcanvas : mcanvases)
 		if(mcanvas != nullptr) {
 			mcanvas->Modified();
@@ -183,16 +197,49 @@ void RTPlotter::reset() {
 	mdim = 0;
 	mmode = 't';
 	mdrawOptions = "APLINE";
-	for(auto& mgraph2d : mgraphs2d)
-		if(mgraph2d != nullptr)
-			delete mgraph2d;
+	delete mhist3d;
+	mhist3d = nullptr;
+	delete mline;
+	mline = nullptr;
 	for(auto& mgraph : mgraphs)	
 		if(mgraph != nullptr)
 			delete mgraph;
 	for(auto& mcanvas : mcanvases)
 		if(mcanvas != nullptr)
 			delete mcanvas;
-	mgraphs2d.clear();
 	mgraphs.clear();
 	mcanvases.clear();
+}
+
+void RTPlotter::evalMinMax(double x, double y, double z) {
+	if(mins.size() < 1)
+		mins.push_back(HUGE_VAL);
+	if(maxs.size() < 1)
+		maxs.push_back(-HUGE_VAL);
+	if(mins[0] > x)
+		mins[0] = x;
+	if(maxs[0] < x)
+		maxs[0] = x;
+
+	if(y != HUGE_VAL){
+		if(mins.size() < 2)
+			mins.push_back(HUGE_VAL);
+		if(maxs.size() < 2)
+			maxs.push_back(-HUGE_VAL);
+		if(mins[1] > y)
+			mins[1] = y;
+		if(maxs[1] < y)
+			maxs[1] = y;
+	}
+
+	if(z != HUGE_VAL){
+		if(mins.size() < 3)
+			mins.push_back(HUGE_VAL);
+		if(maxs.size() < 3)
+			maxs.push_back(-HUGE_VAL);
+		if(mins[2] > z)
+			mins[2] = z;
+		if(maxs[2] < z)
+			maxs[2] = z;
+	}
 }

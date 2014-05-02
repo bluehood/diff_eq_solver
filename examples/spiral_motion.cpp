@@ -18,8 +18,8 @@ int main()
 	EulerSolver eulersolver(0.,X0,double_osc_f,0.1);
 	RK2Solver rksolver(0.,X0,double_osc_f,0.1);
 	
-	std::ofstream eulerOutput("euler_spyral.txt");
-	std::ofstream rkOutput("rk2_spyral.txt");
+	std::ofstream eulerOutput("euler_spiral.txt");
+	std::ofstream rkOutput("rk2_spiral.txt");
 	for(PosVec X = X0; eulersolver.getTime() < 100; X = eulersolver.step())
 	{
 		eulerOutput << eulersolver.getTime() << " ";

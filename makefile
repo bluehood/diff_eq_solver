@@ -8,7 +8,8 @@ ROOT_LIBS := `root-config --libs`
 executables := examples/spiral_motion.x examples/example.x \
 examples/duffing.x examples/simple_example.x \
 examples/rtplotter_example.x examples/maryplotter_example.x \
-examples/lorenz_attractor.x
+examples/lorenz_attractor.x examples/dgtorus.x \
+examples/gtorus.x examples/duffing.x examples/sinevalley.x
 libraries := lib/libsolver.a lib/libplotter.a
 
 all: lib ${libraries} ${executables}

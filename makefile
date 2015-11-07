@@ -16,6 +16,7 @@ all: lib ${libraries} ${executables}
 all_noroot: lib lib/libsolver.a examples/duffing.x \
 examples/example.x examples/simple_example.x \
 examples/spiral_motion.x
+libs: lib lib/libsolver.a
 
 %.x: %.cpp lib/libsolver.a
 	${CXX} ${CXX_FLAGS} -o $@ $< -Isrc -Llib -lsolver

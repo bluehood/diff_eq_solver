@@ -15,7 +15,8 @@ libraries := lib/libsolver.a lib/libplotter.a
 all: lib ${libraries} ${executables}
 all_noroot: lib lib/libsolver.a examples/duffing.x \
 examples/example.x examples/simple_example.x \
-examples/spyral_motion.x
+examples/spiral_motion.x
+libs: lib lib/libsolver.a
 
 %.x: %.cpp lib/libsolver.a
 	${CXX} ${CXX_FLAGS} -o $@ $< -Isrc -Llib -lsolver

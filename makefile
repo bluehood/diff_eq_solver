@@ -1,33 +1,37 @@
 CXX := g++
-CXX_FLAGS := -std=c++11 #-ggdb
+CXX_FLAGS := -std=c++11 -O2
 SOLVER_INCS := -Isrc
-SOLVER_LIBS := -Llib -lsolver -lplotter
+SOLVER_LIBS := -Llib -lsolver 
+PLOTTER_LIBS := -lplotter
 ROOT_INCS := `root-config --cflags`
 ROOT_LIBS := `root-config --libs`
 
-executables := examples/spiral_motion.x examples/example.x \
-examples/duffing.x examples/simple_example.x \
-examples/rtplotter_example.x examples/maryplotter_example.x \
-examples/lorenz_attractor.x examples/dgtorus.x \
-examples/gtorus.x examples/duffing.x examples/sinevalley.x
+executables_noroot := \
+	examples/duffing.x \
+	examples/lorenz_attractor.x  \
+	examples/example.x \
+	examples/simple_example.x \
+	examples/spiral_motion.x
+executables := \
+	${executables_noroot} \
+	examples/rtplotter_example.x \
+	examples/maryplotter_example.x \
+	examples/dgtorus.x \
+	examples/gtorus.x \
+	examples/sinevalley.x
 libraries := lib/libsolver.a lib/libplotter.a
 
 all: lib ${libraries} ${executables}
-all_noroot: lib lib/libsolver.a examples/duffing.x \
-examples/example.x examples/simple_example.x \
-examples/spiral_motion.x
-libs: lib lib/libsolver.a
+all_noroot: lib lib/libsolver.a ${executables_noroot}
 
 %.x: %.cpp lib/libsolver.a
-	${CXX} ${CXX_FLAGS} -o $@ $< -Isrc -Llib -lsolver
+	${CXX} ${CXX_FLAGS} -o $@ $< ${SOLVER_INCS} ${SOLVER_LIBS}
 
-examples/rtplotter_example.x: examples/rtplotter_example.cpp \
-${libraries}
-	${CXX} ${CXX_FLAGS} -o $@ $< ${SOLVER_INCS} ${SOLVER_LIBS} ${ROOT_INCS} ${ROOT_LIBS}
+examples/rtplotter_example.x: examples/rtplotter_example.cpp ${libraries}
+	${CXX} ${CXX_FLAGS} -o $@ $< ${SOLVER_INCS} ${ROOT_INCS} ${ROOT_LIBS} ${SOLVER_LIBS} ${PLOTTER_LIBS}
 
-examples/maryplotter_example.x: examples/maryplotter_example.cpp \
-${libraries}
-	${CXX} ${CXX_FLAGS} -o $@ $< ${SOLVER_INCS} ${SOLVER_LIBS} ${ROOT_INCS} ${ROOT_LIBS}
+examples/maryplotter_example.x: examples/maryplotter_example.cpp ${libraries}
+	${CXX} ${CXX_FLAGS} -o $@ $< ${SOLVER_INCS} ${ROOT_INCS} ${ROOT_LIBS} ${SOLVER_LIBS} ${PLOTTER_LIBS}
 
 lib/libsolver.a: lib/solver.o lib/exceptions.o
 	ar -cvr $@ $^
